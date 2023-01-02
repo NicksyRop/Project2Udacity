@@ -13,22 +13,22 @@ Parameters:
     Default:  10.0.0.0/16
 
   PublicSubnet1CIDR:
-    Description: Availabity zone one Ip adress range CIDR 
+    Description: Availabity zone one public Ip adress range CIDR 
     Type: String
     Default:  10.0.0.0/24
 
+  PrivateSubnet1CIDR:
+  Description: Availablity zone one private Ip adress range CIDR 
+  Type: String
+  Default:  10.0.2.0/24  
+
   PublicSubnet2CIDR:
-    Description: Availablity zone two Ip adress range CIDR 
+    Description: Availablity zone two public  Ip adress range CIDR 
     Type: String
     Default:  10.0.1.0/24
 
-  PrivateSubnet1CIDR:
-    Description: Availablity zone one Ip adress range CIDR 
-    Type: String
-    Default:  10.0.2.0/24
-
   PrivateSubnet2CIDR:
-    Description: Availablity zone two Ip adress range CIDR 
+    Description: Availablity zone two private Ip adress range CIDR 
     Type: String
     Default:  10.0.3.0/24    
 
@@ -91,4 +91,3 @@ Resources:
             Value: !Sub ${EnvironmentName} Private Subnet (AZ2)   
           
 
-Outputs:
