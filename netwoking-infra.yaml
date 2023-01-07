@@ -30,7 +30,16 @@ Parameters:
   PrivateSubnet2CIDR:
     Description: Availablity zone two private Ip adress range CIDR 
     Type: String
-    Default:  10.0.3.0/24    
+    Default:  10.0.3.0/24 
+
+  launchTemplateVersionNumber:
+    Type: String  
+    Default : 1    
+
+  protocal:
+    Description: protocal type for load balancer
+    Type: String
+    Default: http:// 
 
 
 
@@ -128,24 +137,119 @@ Resources:
       AllocationId: !GetAtt NatGateway2EIP.AllocationId
       SubnetId: !Ref PublicSubnet2  
 
+
+  LBSecGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+        GroupDescription: Allow http to our load balancer
+        VpcId: !Ref  VPC
+        SecurityGroupIngress:
+            - IpProtocol: tcp
+              FromPort: 80
+              ToPort: 80
+              CidrIp: 0.0.0.0/0
+        SecurityGroupEgress:
+            - IpProtocol: tcp
+              FromPort: 80
+              ToPort: 80
+              CidrIp: 0.0.0.0/0
+  WebServerSecGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+        GroupDescription: Allow http to our hosts and SSH from local only
+        VpcId: !Ref VPC
+        SecurityGroupIngress:
+            - IpProtocol: tcp
+              FromPort: 8080
+              ToPort: 8080
+              CidrIp: 0.0.0.0/0
+            
+        SecurityGroupEgress:
+            - IpProtocol: tcp
+              FromPort: 0
+              ToPort: 65535
+              CidrIp: 0.0.0.0/0
+
+  myWebAppLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt-get update -y
+          apt-get install apache2 -y
+          systemctl start apache2.service
+          cd /var/www/html
+          echo "it works! Udagram, Udacity" > index.html
+      ImageId: ami-08fdec01f5df9998f
+      SecurityGroups:
+      - Ref: WebServerSecGroup
+      InstanceType: t3.medium
+      BlockDeviceMappings:
+      - DeviceName: "/dev/sdk"
+        Ebs:
+          VolumeSize: '10'
+
+  WebAppGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+        VPCZoneIdentifier: !Join [ ",", [ !Ref PrivateSubnet1, !Ref PrivateSubnet2 ]]
+        LaunchConfigurationName: !Ref myWebAppLaunchConfig
+        MinSize: '1'
+        MaxSize: '5'
+        TargetGroupARNs:
+        - Ref: WebAppTargetGroup
+
+
+  WebAppLB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+        Subnets:
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+        SecurityGroups:
+            - Ref: LBSecGroup
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+        DefaultActions:
+        - Type: forward
+        TargetGroupArn:
+            Ref: WebAppTargetGroup
+        LoadBalancerArn:
+            Ref: WebAppLB
+        Port: '80'
+        Protocol: HTTP
+  ALBListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+        Actions:
+        - Type: forward
+        TargetGroupArn: !Ref 'WebAppTargetGroup'
+        Conditions:
+        - Field: path-pattern
+        Values: [/]
+        ListenerArn: !Ref 'Listener'
+        Priority: 1
+  WebAppTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+        HealthCheckIntervalSeconds: 10
+        HealthCheckPath: /
+        HealthCheckProtocol: HTTP
+        HealthCheckTimeoutSeconds: 8
+        HealthyThresholdCount: 2
+        Port: 80
+        Protocol: HTTP
+        UnhealthyThresholdCount: 5
+        VpcId: !Ref VPC
+            
+
 Outputs:
-  VPC: 
-    Description: Rereference to the created VPC
-    Value: !Ref VPC
-    Export:
-      Name: !Sub ${EnvironmentName}-VPCID   
-
-  PublicSubnets:
-    Description: A list of the public subnets
-    Value: !Join [ ",", [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]]
-    Export:
-      Name: !Sub ${EnvironmentName}-PUB-NETS
-
-  PrivateSubnets:
-    Description: A list of the private subnets
-    Value: !Join [ ",", [ !Ref PrivateSubnet1, !Ref PrivateSubnet2 ]]
-    Export:
-      Name: !Sub ${EnvironmentName}-PRIV-NETS
+  WebAppLB: 
+    Description: Reference to the created WebAppLB
+    Value: !Sub ${protocal}!GetAtt WebAppLB.DNSName
+  
                 
           
 
