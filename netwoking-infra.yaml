@@ -334,12 +334,9 @@ Resources:
 Outputs:
   LBname: 
     Description: DNS of loadbalancer
-    Value: 
-        Fn::Join:
-          - "//"
-          - - "http:"
-            - !GetAtt WebAppLB.DNSName
-        Export:
+    Value: !Join ["//",[ "http:" ,!GetAtt WebAppLB.DNSName ]]
+      
+    Export:
           Name: !Sub ${EnvironmentName}-DNS
   
                 
