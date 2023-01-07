@@ -128,7 +128,7 @@ Resources:
       AllocationId: !GetAtt NatGateway2EIP.AllocationId
       SubnetId: !Ref PublicSubnet2  
 
-outputs:
+Outputs:
   VPC: 
     Description: Rereference to the created VPC
     Value: !Ref VPC

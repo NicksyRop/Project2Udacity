@@ -7,13 +7,13 @@ Parameters:
     Type: String
 
   myLaunchTemplateVersionNumber:
-      Type: String  
-      Default : 1
+    Type: String  
+    Default: 1
 
   protocal:
     Description: protocal type to be pre-pended on DNS  name
     Type: String 
-    default: http://   
+    Default: http://   
 
 Resources: 
   LBSecGroup:
@@ -130,10 +130,12 @@ Resources:
 
 
 
-outputs:
-   WebAppLB: 
-      Description: Reference to the created WebAppLB
-      Value: !Ref WebAppLB
-      Export:
-        Name: !Sub ${EnvironmentName}-VPCID                     
+Outputs:
+  WebAppLB: 
+    Description: Reference to the created WebAppLB
+    Value: !Ref WebAppLB
+    Export:
+      Name: !Sub "${protocal}!GetAtt WebAppLB.DNSName"
+
+        
       
